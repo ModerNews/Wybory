@@ -51,7 +51,6 @@
       text-shadow: 0 4px 4px rgba(0,0,0,0.5);
       display: none;
     }
-
     </style>
   </head>
   <body>
@@ -60,25 +59,12 @@
       <canvas id="canvas" width="1920" height="1080" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px"></canvas>
 
       <!-- Foreground -->
-      <img src="/img/result-overlay.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+      <img src="/img/result-overlay21.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
       <div id="bar-container" style="position: absolute; top: 250px; left: 227px; width: 1591px; height: 576px">
-        <div class="bar" id="bar1" style="left: 32px"></div>
-        <div class="bar" id="bar2" style="left: 315px"></div>
-        <div class="bar" id="bar3" style="left: 595px"></div>
-        <div class="bar" id="bar4" style="left: 880px"></div>
-        <div class="bar" id="bar5" style="left: 1160px"></div>
-        <div class="bar" id="bar6" style="left: 1445px"></div>
-        <span class="count" id="text1" style="left: 32px">0</span>
-        <span class="count" id="text2" style="left: 315px">0</span>
-        <span class="count" id="text3" style="left: 595px">0</span>
-        <span class="count" id="text4" style="left: 880px">0</span>
-        <span class="count" id="text5" style="left: 1160px">0</span>
-        <span class="count" id="text6" style="left: 1445px">0</span>
+        <!-- The bars will be added here by script -->
       </div>
     </div>
-
-    <script>
-      const app = new PIXI.Application({
+    <script>const app = new PIXI.Application({
         width: 1920,
         height: 1080,
         backgroundColor: 0x3e4a69,
@@ -155,7 +141,29 @@
         {
           let data = JSON.parse(evt.data);
           if(data.event === 'reveal_result') {
+            console.log("receiving")
             animateBar(data.which, data.value, data.total);
+          }
+          if(data.event === 'candidates'){
+            let candidate_no = data.content.length;
+            let field_width = 1591;
+            let bar_width = 95;
+            var spacing = (field_width - 64 - bar_width * 10) / 9;
+            for(var i = 1; i <= candidate_no; i = i + 1)
+            {
+              let offset = "left: " + (32 + bar_width * (i-1) + spacing * (i-1)) + "px;"
+              let barDiv = document.createElement('div');
+              barDiv.id = "bar" + i;
+              barDiv.className = "bar";
+              barDiv.style = offset;
+              document.getElementById("bar-container").appendChild(barDiv);
+              
+              let labelSpan = document.createElement('span');
+              labelSpan.id = "text" + i;
+              labelSpan.className = "count";
+              labelSpan.style = offset;
+              document.getElementById("bar-container").appendChild(labelSpan);
+            }
           }
         }
 

@@ -15,49 +15,54 @@
       }
     </style>
   </head>
-  <body style="font-family: Segoe UI, Roboto">
-    <h1>Panel sterowania nakładką CG</h1>
-    <input type="checkbox" id="emblem-visible"/>
-    <label for="emblem-visible">Pokaż logo</label>
-    <hr>
-    <h2>Belka informacyjna</h2>
-    <p>Po jednej wiadomości na linię</p>
-    <textarea id="infobar-content" style="width: 500px; height: 120px; background: #eee"></textarea>
-    <br>
-    <br>
-    <button id="infobar-update">Aktualizuj treść</button>
-    <hr>
-	<h2>Pasek z tekstem</h2>
-	<select id="textbar-content" size="10" style="width:400px"></select>
-	<br>
-	<br>
-	<input id="textbar-clock" type="checkbox">
-	<label for="textbar-clock">Pokaż zegar</label>
-	<br>
-	<input id="textbar-bold" type="checkbox">
-	<label for="textbar-bold">Pogrubiony tekst</label>
-	<br><br>
-	<input id="textbar-text" type="text" style="width: 400px">
-	<br><br>
-	<button id="textbar-show">Pokaż</button>
-	<button id="textbar-hide">Ukryj</button>
-  <button id="textbar-update">Podmień tekst</button>
-  <hr>
-  <h2>Stoper</h2>
-  <b id="timer-current" style="font-size: 1.3em">00:00</b>
-  <button id="timer-start">Wznów</button>
-  <button id="timer-stop">Zatrzymaj</button>
-  <br><br>
-  <input id="timer-value" type="text" value="02:00">
-  <button id="timer-set">Ustaw i zatrzymaj</button>
-  <hr>
-  <h2>Wyniki wyborów</h2>
-  <p>Said Hannoush <input type="number" id="vote-count1"> <button class="vote-show" data-which="1">Pokaż</button></p>
-  <p>Igor Hołowacz <input type="number" id="vote-count2"> <button class="vote-show" data-which="2">Pokaż</button></p>
-  <p>Krzysztof Puterko <input type="number" id="vote-count3"> <button class="vote-show" data-which="3">Pokaż</button></p>
-  <p>Emilia Rynkiewicz <input type="number" id="vote-count4"> <button class="vote-show" data-which="4">Pokaż</button></p>
-  <p>Maksymilian Skica <input type="number" id="vote-count5"> <button class="vote-show" data-which="5">Pokaż</button></p>
-  <p>Michał Strugarek <input type="number" id="vote-count6"> <button class="vote-show" data-which="6">Pokaż</button></p>
+  <body class="body" style="font-family: Segoe UI, Roboto">
+    <div id='top-level-container'>
+      <h1>Panel sterowania nakładką CG</h1>
+      <input type="checkbox" id="emblem-visible"/>
+      <label for="emblem-visible">Pokaż logo</label>
+    </div>
+    <div id="infobar-container">>
+      <hr>
+      <h2>Belka informacyjna</h2>
+      <p>Po jednej wiadomości na linię</p>
+      <textarea id="infobar-content" style="width: 500px; height: 120px; background: #eee"></textarea>
+      <br>
+      <br>
+      <button id="infobar-update">Aktualizuj treść</button>
+    </div>
+      <div id='textbar-container'>
+      <hr>
+      <h2>Pasek z tekstem</h2>
+      <select id="textbar-content" size="10" style="width:400px"></select>
+      <br>
+      <br>
+      <input id="textbar-clock" type="checkbox">
+      <label for="textbar-clock">Pokaż zegar</label>
+      <br>
+      <input id="textbar-bold" type="checkbox">
+      <label for="textbar-bold">Pogrubiony tekst</label>
+      <br><br>
+      <input id="textbar-text" type="text" style="width: 400px">
+      <br><br>
+      <button id="textbar-show">Pokaż</button>
+      <button id="textbar-hide">Ukryj</button>
+      <button id="textbar-update">Podmień tekst</button>
+    </div>
+    <div id="timer-control-container">
+      <hr>
+      <h2>Stoper</h2>
+      <b id="timer-current" style="font-size: 1.3em">00:00</b>
+      <button id="timer-start">Wznów</button>
+      <button id="timer-stop">Zatrzymaj</button>
+      <br><br>
+      <input id="timer-value" type="text" value="00:40">
+      <button id="timer-set">Ustaw i zatrzymaj</button>
+    </div>
+    <div id="result-control-container">
+      <hr>
+      <h2>Wyniki wyborów</h2>
+      <!-- Script will add input fields here-->
+    </div>
 
     <script>
       let ws;
@@ -111,6 +116,48 @@
             if(timerState.running) {
               timerState.startedAt = Date.now();
             }
+          }
+          if(data.event === 'candidates'){
+            let candidates = data.content;
+            let container = document.getElementById("result-control-container")
+            for(var i = 0; i < candidates.length; i++){
+              let field = document.createElement('p');
+              field.innerHTML = candidates[i] + " ";
+
+              let score_input = document.createElement("input");
+              score_input.type = "number";
+              score_input.id = "vote-count" + (i + 1);
+              field.appendChild(score_input);
+
+              let calculate_button = document.createElement("button");
+              calculate_button.className = "vote-show";
+              calculate_button.setAttribute('data-which', (i+1));
+              calculate_button.innerHTML = "Pokaż";
+              field.appendChild(calculate_button);
+              container.appendChild(field)
+            }
+            
+            function voteSum(vote_cats) {
+              let sum = 0;
+              for(let i = 1; i <= vote_cats; i++) {
+                let v = $('#vote-count' + i).val();
+                sum += parseInt(v);
+              }
+
+              return sum;
+            }
+
+            $('.vote-show').click((e) => {
+              console.log("dispatching");
+              let which = parseInt($(e.target).attr('data-which'));
+
+              ws.send(JSON.stringify({
+                event: 'reveal_result',
+                which,
+                value: parseInt($('#vote-count' + which).val()),
+                total: voteSum(candidates.length),
+              }));
+            });
           }
         }
 
@@ -202,26 +249,27 @@
         }));
       });
 
-      function voteSum() {
-        let sum = 0;
-        for(let i = 1; i <= 6; i++) {
-          let v = $('#vote-count' + i).val();
-          sum += parseInt(v);
-        }
+      // function voteSum(vote_cats) {
+      //   let sum = 0;
+      //   for(let i = 1; i <= vote_cats; i++) {
+      //     let v = $('#vote-count' + i).val();
+      //     sum += parseInt(v);
+      //   }
 
-        return sum;
-      }
+      //   return sum;
+      // }
 
-      $('.vote-show').click((e) => {
-        let which = parseInt($(e.target).attr('data-which'));
+      // $('.vote-show').click((e) => {
+      //   console.log("dispatching");
+      //   let which = parseInt($(e.target).attr('data-which'));
 
-        ws.send(JSON.stringify({
-          event: 'reveal_result',
-          which,
-          value: parseInt($('#vote-count' + which).val()),
-          total: voteSum(),
-        }));
-      });
+      //   ws.send(JSON.stringify({
+      //     event: 'reveal_result',
+      //     which,
+      //     value: parseInt($('#vote-count' + which).val()),
+      //     total: voteSum(),
+      //   }));
+      // });
 
       setInterval(() => { // Update timer
         let time = timerState.time;

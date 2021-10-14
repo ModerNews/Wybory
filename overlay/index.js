@@ -18,8 +18,10 @@ let currentTimerState = {
   startedAt: 0,
 };
 let predefOpts = fs.readFileSync(path.resolve(__dirname, 'strings.txt')).toString().split('\n');
-
 predefOpts = predefOpts.map(str => str.trim());
+
+let candidates = fs.readFileSync(path.resolve(__dirname, 'candidates.txt')).toString().split('\n');
+candidates = candidates.map(str => str.trim());
 
 function updateTimerState() {
   if(currentTimerState.running) {
@@ -47,6 +49,10 @@ wss.on('connection', (ws) => {
     event: 'predefs',
     content: predefOpts,
   }));
+  ws.send(JSON.stringify({
+    event: 'candidates',
+    content: candidates,
+  }))
 
   updateTimerState();
   ws.send(JSON.stringify({

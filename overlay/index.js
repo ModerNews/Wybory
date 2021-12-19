@@ -52,7 +52,7 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({
     event: 'candidates',
     content: candidates,
-  }))
+  }));
 
   updateTimerState();
   ws.send(JSON.stringify({
@@ -93,6 +93,16 @@ wss.on('connection', (ws) => {
             type: dat.type,
             bold: dat.bold,
             text: dat.text,
+          }));
+        });
+      }
+
+      if(dat.event === 'update_table') {
+        wss.clients.forEach(cl => {
+          cl.send(JSON.stringify({
+            event: 'update_table',
+            group1: dat.group1,
+            group2: dat.group2,
           }));
         });
       }

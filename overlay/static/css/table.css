@@ -1,0 +1,42 @@
+.background {
+  background-color: rgba(43, 39, 39, 0.705);
+  height: 880;
+  width: 1780;
+}
+
+h1 {
+  color: yellow;
+}
+
+body, html {
+  background: transparent;
+  margin: 0;
+  font-family: Rajdhani;
+  overflow: hidden;
+}
+
+.screen {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+}
+
+.bar {
+  position: absolute;
+  bottom: 0;
+  width: 95px;
+  background: linear-gradient(to right, #fff 0%, rgba(255,255,255,0.5) 20%, #fff 100%);
+}
+
+.count {
+  position: absolute;
+  display: block;
+  color: white;
+  bottom: 10px;
+  width: 95px;
+  text-align: center;
+  font-size: 40pt;
+  font-weight: 700;
+  text-shadow: 0 4px 4px rgba(0,0,0,0.5);
+  display: none;
+}

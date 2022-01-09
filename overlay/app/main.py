@@ -18,7 +18,7 @@ from Models import *
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="../static"), name="static")
-templates = Jinja2Templates(directory="../templates")
+# templates = Jinja2Templates(directory="../templates")
 global timer
 global info_bar
 global emble_visible
@@ -50,12 +50,25 @@ def UpdateTimer():
 
 @app.get("/")
 async def index_loader(request: Request, team1: str = "Nieznana", team2: str = "Nieznana"):
-    return templates.TemplateResponse("index.html", {"request": request, "team1": team1.replace("_", " "), "team2": team2.replace("_", " ")})
+    # return templates.TemplateResponse("index.html", {"request": request, "team1": team1.replace("_", " "), "team2": team2.replace("_", " ")})
+    with open('../templates/index.html', encoding='utf8') as file:
+        data = file.read()
+    return HTMLResponse(data)
 
 
 @app.get("/controller")
 async def main_controller(request: Request):
-    return templates.TemplateResponse("controller.html", {"request": request})
+    # return templates.TemplateResponse("controller.html", {"request": request})
+    with open('../templates/controller.html', encoding='utf8') as file:
+        data = file.read()
+    return HTMLResponse(data)
+
+@app.get("/tournament")
+async def tournament_view(request: Request):
+    # return templates.TemplateResponse('tournament-table.html', {"request": request})
+    with open('../templates/tournament-table.html', encoding='utf8') as file:
+        data = file.read()
+    return HTMLResponse(data)
 
 
 # region Websockets

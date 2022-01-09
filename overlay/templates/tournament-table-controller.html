@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Kontroler Turniej</title>
+
+    <link rel="stylesheet" href="/static/css/rajdhani.css">
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+        integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E=" crossorigin="anonymous"></script>
+
+    <script src="/static/js/pixi.min.js"></script>
+
+    <style>
+        body,
+        html {
+            background: transparent;
+            margin: 0;
+            font-family: Rajdhani;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+        }
+
+        .bar {
+            position: absolute;
+            bottom: 0;
+            width: 95px;
+            background: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.5) 20%, #fff 100%);
+        }
+
+        .count {
+            position: absolute;
+            display: block;
+            color: white;
+            bottom: 10px;
+            width: 95px;
+            text-align: center;
+            font-size: 40pt;
+            font-weight: 700;
+            text-shadow: 0 4px 4px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .background {
+            background-color: rgba(39, 35, 35, 0.356);
+            width: 1720px;
+            height: 880px;
+            position: absolute;
+            top: 100px;
+            left: 100px;
+        }
+
+        table.tournament-table {
+            font-family: Rajdhani;
+            border: 8px none #ffffffa2;
+            font-weight: bold;
+
+            width: 800px;
+            height: auto;
+
+            text-align: center;
+            border-collapse: collapse;
+        }
+
+        table.tournament-table td,
+        table.tournament-table th {
+            border: 8px none #ffffffa2;
+            padding: 5px 0px;
+        }
+
+        table.tournament-table tbody td {
+            font-size: 26px;
+            color: #ffffff;
+            height: 50px;
+        }
+
+        table.tournament-table thead {
+            background: #1C6EA4;
+            border-bottom: 8px none #ffffffa2;
+        }
+
+        table.tournament-table thead th {
+            font-size: 30px;
+            height: 60px;
+            color: #ffffff;
+            text-align: center;
+            border-left: 2px none #D0E4F5;
+        }
+
+        table.tournament-table thead th:first-child {
+            border-left: none;
+        }
+
+        table.tournament-table tfoot td {
+            font-size: 14px;
+        }
+
+        table.tournament-table tfoot .links {
+            text-align: right;
+        }
+
+        table.tournament-table tfoot .links a {
+            display: inline-block;
+            background: #1C6EA4;
+            color: #ffffffa2;
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+
+        span {
+            font-family: Rajdhani;
+            font-weight: bold;
+            font-size: 40px;
+            color: azure;
+        }
+
+        .update-button {
+            font-size: 30px;
+            width: 300px;
+            height: 50px;
+            font: Rajdhani;
+            position: absolute;
+            left: 810px;
+            top: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="screen">
+        <!-- Background -->
+        <canvas id="canvas" width="1920" height="1080"
+            style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px"></canvas>
+
+        <!-- Foreground -->
+        <div id="bar-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+            <div style="align-items: center;">
+                <button class="update-button" id="update">Aktualizuj tabelę</button>
+            </div>
+            <div class="background">
+                <span style="position: absolute; top: 50px; left: 800px"> Grupa 1</span>
+                <table class="tournament-table" id="group1" style="position: absolute; top: 120px; left: 460px;">
+                    <thead>
+                        <tr>
+                            <th>Nazwa drużyny</th>
+                            <th>W</th>
+                            <th>P</th>
+                            <th>M</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team1"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W1"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L1"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M1"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team2"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W2"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L2"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M2"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team3"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W3"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L3"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M3"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <span style="position: absolute; bottom: 330px; right: 800px"> Grupa 2</span>
+                <table class="tournament-table" id="group2" style="position: absolute; bottom: 50px; right: 460px;">
+                    <thead>
+                        <tr>
+                            <th>Nazwa drużyny</th>
+                            <th>W</th>
+                            <th>P</th>
+                            <th>M</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team1"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W1"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L1"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M1"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team2"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W2"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L2"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M2"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                        <tr>
+                            <td style="width: 430px;" id="1_1"><input type="text" style="width: 430px;" id="team3"
+                                    placeholder="Nazwa drużyny"></td>
+                            <td style="width: 86px;" id="2_1"><input type="text" style="width: 86px;" id="W3"
+                                    placeholder="Wygrane"></td>
+                            <td style="width: 86px;" id="3_1"><input type="text" style="width: 86px;" id="L3"
+                                    placeholder="Przegrane"></td>
+                            <td style="width: 86px;" id="4_1"><input type="text" style="width: 86px;" id="M3"
+                                    placeholder="Mecze"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+    <script>const app = new PIXI.Application({
+            width: 1920,
+            height: 1080,
+            backgroundColor: 0x3e4a69,
+            resolution: window.devicePixelRatio || 1,
+            view: $("#canvas")[0]
+        });
+
+        // add rectangles
+        let rects = [];
+        for (let x = 0; x < 48; x++) {
+            rects[x] = [];
+            for (let y = 0; y < 48; y++) {
+                let rect = new PIXI.Sprite(PIXI.Texture.WHITE);
+                rect.anchor.set(0.5);
+                rect.position.set(20 + x * 40, 20 + y * 40);
+                rect.width = 40;
+                rect.height = 40;
+                rect.scale.set(1);
+                rect.alpha = 0.1;
+                rect.tint = 0;
+                app.stage.addChild(rect);
+
+                rects[x][y] = rect;
+            }
+        }
+
+        let xPos = -900;
+
+
+        app.ticker.add((delta) => {
+            delta *= 1 / 60;
+            xPos += 500 * delta;
+
+            if (xPos > 4000) {
+                xPos = -900;
+            }
+
+            for (let x = 0; x < 48; x++) {
+                for (let y = 0; y < 48; y++) {
+                    let rectPos = rects[x][y].position;
+                    let size = -80 + Math.pow(Math.abs(rectPos.x + rectPos.y - xPos), 0.2) * 30;
+
+                    size = Math.min(Math.max(size, 8), 36);
+
+                    rects[x][y].width = size;
+                    rects[x][y].height = size;
+                }
+            }
+        });
+    </script>
+
+    <script>
+        let ws;
+
+        function createWebsocket() {
+            ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
+            ws.onopen = function(evt) { onOpen(evt) };
+            ws.onclose = function(evt) { onClose(evt) };
+            ws.onmessage = function(evt) { onMessage(evt) };
+            ws.onerror = function(evt) { onError(evt) };
+    
+            function onOpen(evt)
+            {
+    
+            }
+    
+            function onClose(evt)
+            {
+              console.log("Trying to reconnect...");
+              setTimeout(createWebsocket, 1000);
+            }
+    
+            function onMessage(evt)
+            {
+              let data = JSON.parse(evt.data);
+            }
+    
+            function onError(evt)
+            {
+                console.error("socket error");
+            }
+          }
+          
+        createWebsocket();
+
+        $(".update-button").click(() => {
+            let data = JSON.stringify({
+                event: "update_table",
+                group1: [[$("table#group1 > tbody > tr > td > input#team1").val(), $("table#group1 > tbody > tr > td > input#W1").val(), $("table#group1 > tbody > tr > td > input#L1").val(), $("table#group1 > tbody > tr > td > input#M1").val()],
+                [$("table#group1 > tbody > tr > td > input#team2").val(), $("table#group1 > tbody > tr > td > input#W2").val(), $("table#group1 > tbody > tr > td > input#L2").val(), $("table#group1 > tbody > tr > td > input#M2").val()],
+                [$("table#group1 > tbody > tr > td > input#team3").val(), $("table#group1 > tbody > tr > td > input#W3").val(), $("table#group1 > tbody > tr > td > input#L3").val(), $("table#group1 > tbody > tr > td > input#M3").val()]],
+                group2: [[$("table#group2 > tbody > tr > td > input#team1").val(), $("table#group2 > tbody > tr > td > input#W1").val(), $("table#group2 > tbody > tr > td > input#L1").val(), $("table#group2 > tbody > tr > td > input#M1").val()],
+                [$("table#group2 > tbody > tr > td > input#team2").val(), $("table#group2 > tbody > tr > td > input#W2").val(), $("table#group2 > tbody > tr > td > input#L2").val(), $("table#group2 > tbody > tr > td > input#M2").val()],
+                [$("table#group2 > tbody > tr > td > input#team3").val(), $("table#group2 > tbody > tr > td > input#W3").val(), $("table#group2 > tbody > tr > td > input#L3").val(), $("table#group2 > tbody > tr > td > input#M3").val()]],
+            });
+            console.log(data)
+            ws.send(data);
+            console.log("Dispatching...")
+        });
+
+        $(".update-button").click(() => {
+            ws.send(JSON.stringify({
+              event: "infobar",
+              content: "data",
+            }));
+          });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pl" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Stoper wybory</title>
+
+    <script
+      src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+      crossorigin="anonymous"></script>
+
+    <style>
+      body, html {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .flex {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: center;
+      }
+
+      .time {
+        text-align: center;
+        font-size: 160pt;
+        font-family: Segoe UI, Roboto;
+        font-variant: tabular-nums;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex">
+      <span class="time"> </span>
+    </div>
+
+    <script>
+      let ws;
+      let timerState = {
+        running: false,
+        time: 0,
+        startedAt: 0,
+      };
+
+      function createWebsocket() {
+        ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
+        ws.onopen = function(evt) { onOpen(evt) };
+        ws.onclose = function(evt) { onClose(evt) };
+        ws.onmessage = function(evt) { onMessage(evt) };
+        ws.onerror = function(evt) { onError(evt) };
+
+        function onOpen(evt)
+        {
+
+        }
+
+        function onClose(evt)
+        {
+          console.log("Trying to reconnect...");
+          setTimeout(createWebsocket, 1000);
+        }
+
+        function onMessage(evt)
+        {
+          let data = JSON.parse(evt.data);
+          if(data.event === "timer_state") {
+            timerState = data.state;
+
+            if(timerState.running) {
+              timerState.startedAt = Date.now();
+            }
+          }
+        }
+
+        function onError(evt)
+        {
+            console.error("socket error");
+        }
+      }
+
+      createWebsocket();
+
+      setInterval(() => { // Update timer
+        let time = timerState.time;
+
+        if(timerState.running) {
+          let current = Date.now();
+          let realTime = (current - timerState.startedAt) / 1000;
+
+          time = Math.max(
+            timerState.time - realTime, 0);
+        }
+
+        // Set up info
+        let time2 = Math.floor(time);
+        let minutes = Math.floor(time2 / 60);
+        let seconds = Math.floor(time2 % 60);
+
+        let timeStrng = (((minutes<10)?("0"):("")) + minutes
+          + ":" + ((seconds<10)?("0"):("")) + seconds);
+
+        $(".time").text(timeStrng);
+      }, 100);
+    </script>
+  </body>
+</html>

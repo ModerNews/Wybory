@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="preload" as="image" href="/static/img/separator.png">
+
+  <title>Nakładka Wybory</title>
+
+  <link rel="stylesheet" href="/static/css/rajdhani.css">
+  <style>
+  body, html {
+    background: transparent;
+    margin: 0;
+    font-family: Rajdhani;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  #clock {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 1040px;
+    width: 300px;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    font-size: 67px;
+    line-height: 0;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #clock span {
+    display: inline-block;
+    width: 37px;
+    text-shadow: 0 4px 4px rgba(0,0,0, 0.5);
+  }
+
+  #clock .span-colon {
+    display: inline-block;
+    width: 16px;
+  }
+
+  .mq-content {
+    position: absolute;
+    width: 1615px;
+    height: 82px;
+    top: 998px;
+    left: 305px;
+    overflow: hidden;
+    color: black;
+    font-size: 49px;
+  }
+
+  .mq-content .mq-text {
+    position: absolute;
+    word-break: keep-all;
+    white-space: nowrap;
+    top: 11px;
+    font-weight: 500;
+  }
+
+  .mq-content .mq-sep {
+    position: absolute;
+    height: 55px;
+    width: 46px;
+    top: 14px;
+    left: 260px;
+    background: url("/static/img/separator.png");
+  }
+  </style>
+
+  <script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+
+  <script
+  src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+  integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+  crossorigin="anonymous"></script>
+
+  <script src="/static/js/pixi.min.js"></script>
+  <script src="/static/js/ease.js"></script>
+
+
+</head>
+<body>
+  <div class="screen">
+    <canvas id="canvas" width="1920" height="1080" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px"></canvas>
+    <!-- Overlay -->
+    <img src="/static/img/overlay1.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+    <div class="mq-content"></div>
+    <img src="/static/img/overlay2.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+    <img id="emblem" src="/static/img/emblem.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; display: none;">
+    <p id="clock"></p>
+    <div id="header-container", style="visibility: hidden;">
+      <div class="header-images">
+        <img id="imglobby" src="/static/img/loza.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+        <img id="imgteams" src="/static/img/teamy.png" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+        <img id="imgmaps" src="/static/img/mapy.png" style="visibility: hidden; position: absolute; top: 0; left: 0; width: 1920px; height: 1080px">
+      </div>
+      <div class="header-texts" style="position: relative; text-align: center;">
+        <div class="lobby" style="position: relative; top: 48px ;left: 50%; transform: translate(-50%, -50%); font-size: 30px; font-family:Rajdhani ">Loża Komentatorska</div>
+        <div id="team1-container" style="position: absolute;top: 30px; width: 586px; transform: translate(0, -50%); font-size: 30px; font-family:Rajdhani "><span id="team1">{{ team1 }}</span></div>
+        <div id="team2-container" style="position: absolute;top: 30px;left: 1334px; width: 586px; transform: translate(0, -50%); font-size: 30px; font-family:Rajdhani "><span id="team2">{{ team2 }}</span></div>
+        <div id="map1-container" style="visibility: hidden; position: absolute; top: 77px ;left: 0; height: 128px; width: 287px; vertical-align: center; font-size: 30px; font-family:Rajdhani "><span id="map1">Overpass<br/>16:9</span></div>
+        <div id="map2-container" style="visibility: hidden; position: absolute;: absolute; top: 77px ;right: 0; height: 128px; width: 287px; vertical-align: center;  font-size: 30px; font-family:Rajdhani "><span id="map2">Mirrage<br/>4:2</span></div>
+      </div>
+    </div>
+  <script>
+  let ws;
+
+  var timerState = {
+    running: false,
+    time: 0,
+    startedAt: 0,
+  };
+
+  // Clock script
+  let clockRef = document.getElementById("clock");
+
+  setInterval(() => {
+    let clockString = "";
+    let date = new Date();
+
+    clockString += (date.getHours()<10?"0":"") + date.getHours();
+    clockString += ":";
+    clockString += (date.getMinutes()<10?"0":"") + date.getMinutes();
+    clockString += ":";
+    clockString += (date.getSeconds()<10?"0":"") + date.getSeconds();
+
+    let clockString2 = "";
+    for (let i = 0; i < 8; i++) {
+      if(clockString[i] != ":") {
+        clockString2 += "<span>" + clockString[i] +"</span>";
+      } else {
+        clockString2 += "<span class=\"span-colon\">" + clockString[i] +"</span>";
+      }
+    }
+
+    if(clockRef.innerHTML !== clockString2)
+    clockRef.innerHTML = clockString2;
+  }, 100);
+
+  // Marquee script
+  let visible = false;
+  let marquee_elements = [];
+  let marquee_pointer = 0;
+
+  let framestamp = null;
+
+  let timeout_id = 0;
+
+  let shown_elements = [];
+
+  function createWebsocket() {
+    console.log("ws://" + location.hostname + ":" + location.port + "/websocket")
+    ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
+    ws.onopen = function(evt) { onOpen(evt) };
+    ws.onclose = function(evt) { onClose(evt) };
+    ws.onmessage = function(evt) { onMessage(evt) };
+    ws.onerror = function(evt) { onError(evt) };
+
+    function onOpen(evt)
+    {
+
+    }
+
+    function onClose(evt)
+    {
+      console.log("Trying to reconnect...");
+      setTimeout(createWebsocket, 1000);
+    }
+
+    function onMessage(evt)
+    {
+      let data = JSON.parse(evt.data);
+      console.log("Receiving websocket data")
+      console.log(data)
+      if(data.event === "infobar") {
+        marquee_elements = data.content;
+        if(visible && data.content.length == 0) {
+          visible = false;
+          $(".mq-content").fadeOut("slow");
+        }
+        else if(!visible && data.content.length > 0) {
+          visible = true;
+          $(".mq-content").empty();
+          shown_elements = [];
+          $(".mq-content").fadeIn("slow");
+          framestamp = null;
+          window.requestAnimationFrame(step);
+        }
+      }
+
+      if(data.event === "show_emblem") {
+        if(data.value) {
+          $("#header-container").css('visibility', 'visible');
+        }
+        else {
+          $("#header-container").css('visibility', 'hidden');
+        }
+      }
+
+      if(data.event === "show_textbar") {
+        switch(data.type) {
+        case 1:
+          createFrameWoutClock(data.text, data.bold);
+          break;
+        case 2:
+          createFrameWithClock(data.text, data.bold);
+          break;
+        }
+      }
+
+      if(data.event === "update_textbar") {
+        swapText(data.text, data.bold);
+      }
+
+      if(data.event === "hide_textbar") {
+        removeFrame();
+      }
+
+      if(data.event === "timer_state") {
+        timerState = data.state;
+
+        if(timerState.running) {
+          timerState.startedAt = Date.now();
+        }
+      }
+
+      if (data.event === "maps_state") {
+        mapState = data.state;
+
+        if(!mapState.visible) {
+          $('#map1-container').css('visibility', 'hidden');
+          $("#map2-container").css('visibility', 'hidden');
+          $("#imgmaps").css('visibility', 'hidden');
+        }
+        else {
+          $('#map1-container').css('visibility', 'visible');
+          $("#map2-container").css('visibility', 'visible');
+          $("#imgmaps").css('visibility', 'visible');
+          $('#map1').text(data.team1)
+          $('map2').text(data.team2)
+        }
+      }
+    }
+
+    function onError(evt)
+    {
+      console.error("socket error");
+    }
+  }
+
+  var speed = 160;
+
+  function step(timestamp) {
+    if(!visible) {
+      return;
+    }
+
+
+    var timediff = timestamp - framestamp;
+    if(framestamp == null)
+    timediff = 30;
+
+    if(shown_elements.length == 0 || $(shown_elements[0].el).width() + shown_elements[0].x < 1620 - 32) {
+      if(shown_elements.length > 0 && shown_elements[0].type == "txt") {
+        //Put separator
+        var newEl = $(`<div class="mq-sep"></div>`);
+        $(".mq-content").append(newEl);
+
+        shown_elements.unshift({
+          el: newEl,
+          x: 1620,
+          type: "sep"
+        });
+      }
+      else {
+        //Put next text
+        marquee_pointer = marquee_pointer % marquee_elements.length;
+
+        var newEl = $(`<div class="mq-text"></div>`);
+        newEl.html(marquee_elements[marquee_pointer]);
+        $(".mq-content").append(newEl);
+
+        shown_elements.unshift({
+          el: newEl,
+          x: 1620,
+          type: "txt"
+        });
+
+        marquee_pointer++;
+      }
+    }
+
+    shown_elements.forEach((element) => {
+      element.x-=speed * timediff / 1000;
+      $(element.el).css("left", element.x + "px");
+    });
+
+    var len = shown_elements.length - 1;
+    if(shown_elements.length > 0 && $(shown_elements[len].el).width() + shown_elements[len].x < 0) {
+      $(shown_elements[len].el).remove();
+      shown_elements.pop();
+    }
+
+    framestamp = timestamp;
+    if(visible) {
+      window.requestAnimationFrame(step);
+    }
+  }
+
+  $(document).ready(function() {
+      createWebsocket();
+  });
+  </script>
+
+  <script>
+  const app = new PIXI.Application({
+    width: 1920,
+    height: 1080,
+    transparent: true,
+    resolution: window.devicePixelRatio || 1,
+    view: $("#canvas")[0]
+  });
+
+  const loader = new PIXI.Loader();
+  loader.add("bar1", "/static/img/bar1.png");
+  loader.add("rajdhani-bold", "/static/img/rajdhani-bold.fnt");
+  loader.add("rajdhani-bold_", "/static/img/rajdhani-bold.png");
+  loader.add("rajdhani-reg", "/static/img/rajdhani-norm.fnt");
+  loader.add("rajdhani-reg_", "/static/img/rajdhani-norm.png");
+  loader.add("rajdhani-clock", "/static/img/rajdhani-clock.fnt");
+  loader.add("rajdhani-clock_", "/static/img/rajdhani-clock.png");
+  let resources = null;
+
+  const ease = new Ease.Ease({
+    useRAF: false,
+    useTicker: true,
+    maxFrame: Infinity
+  });
+
+  let currentState = 0;
+  let screenRefs = {};
+
+  loader.load((loader, res) => {
+    console.log(res);
+    resources = res;
+    //res["rajdhani-bold_"].texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    //res["rajdhani-norm_"].texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+  });
+
+  function createFrameWoutClock(text, bold) {
+    if(currentState > 0) return;
+    currentState = 1;
+
+    app.stage.removeChildren();
+
+    screenRefs = {};
+
+    let container = new PIXI.Container();
+    screenRefs.container = container;
+
+    let shade = new PIXI.Sprite(resources["bar1"].texture);
+    shade.position.set(413, 751);
+    shade.alpha = 0;
+
+    screenRefs.shade = shade;
+
+    ease.add(shade, {alpha: 1}, {duration: 2000, wait: 500});
+    container.addChild(shade);
+
+    screenRefs.rects = [];
+    for(let y = 0; y < 5; y++) {
+      screenRefs.rects[y] = [];
+      for(let x = 0; x < 50; x++) {
+        let rect = new PIXI.Sprite(PIXI.Texture.WHITE);
+        rect.alpha = 0.5;
+        rect.tint = 0;
+        rect.anchor.set(0.5, 0.5);
+        rect.position.set(427 + 28 * x, 765 + 28 * y);
+
+        let scale = (53 - x * 1 - y * 1) / 5;
+        let scaleNorm = Math.min(Math.max(scale, 0), 1);
+
+        rect.width = rect.height = 0;
+
+        ease.add(rect, {
+          width: 28 * scaleNorm,
+          height: 28 * scaleNorm
+        }, {
+          duration: 800,
+          ease: "easeOutBack",
+          wait: (x * 0.7 + y * 3) * 15,
+        });
+
+        screenRefs.rects[y][x] = rect;
+
+        container.addChild(rect);
+      }
+    }
+
+    const segments = [{y: 785, h: 45}, {y: 823, h: 54}, {y: 751, h: 80}, {y: 864, h: 27}];
+
+    screenRefs.segmentSliders = [];
+    screenRefs.segmentBars = [];
+
+    segments.forEach((seg, i) => {
+      let slider = new PIXI.Sprite(PIXI.Texture.WHITE);
+      slider.position.set(0, seg.y);
+      slider.height = seg.h;
+      slider.alpha = 0.3;
+      slider.tint = 0x294e8d;
+      container.addChild(slider);
+
+      let bar = new PIXI.Sprite(PIXI.Texture.WHITE);
+      bar.position.set(431, seg.y);
+      bar.width = 0;
+      bar.height = seg.h;
+      bar.tint = 0x294e8d;
+      container.addChild(bar);
+
+      ease.add(slider, {width: 431}, {duration: 300, wait: i * 124}).on("complete", () => {
+        ease.add(slider, {x: 431, width: 0}, {duration: 300});
+        ease.add(bar, {x: 413, width: 18}, {duration: 256});
+      });
+
+      screenRefs.segmentSliders[i] = slider;
+      screenRefs.segmentBars[i] = bar;
+    });
+
+    let texxx = new PIXI.BitmapText(text, {
+      fontName: bold?("rajdhani-bold"):("rajdhani-norm")
+    });
+
+    texxx.maxWidth = 1400;
+    texxx.anchor.set(0, 0.5);
+    texxx.position.set(470, 817);
+    texxx.alpha = 0;
+
+    let targetScaleX = 1;
+
+    if(texxx.width > 1200) {
+      targetScaleX = 1200 / texxx.width;
+    }
+
+    texxx.scale.set(2 * targetScaleX, 2);
+
+    texxx.position.x += texxx.width / 4;
+    texxx.anchor.set(0.5, 0.5);
+
+    ease.add(texxx, {scaleX: targetScaleX, scaleY: 1},
+      {duration: 600, ease: "easeOutCubic", wait: 200});
+      ease.add(texxx, {alpha: 1}, {duration: 1200, wait: 300});
+
+      screenRefs.bmpText = texxx;
+
+      container.addChild(texxx);
+
+      app.stage.addChild(container);
+    }
+
+
+
+    function createFrameWithClock(text, bold) {
+      if(currentState > 0) return;
+      currentState = 2;
+
+      app.stage.removeChildren();
+
+      screenRefs = {};
+
+      let container = new PIXI.Container();
+      screenRefs.container = container;
+
+      let shade = new PIXI.Sprite(resources["bar1"].texture);
+      shade.position.set(413, 751);
+      shade.alpha = 0;
+
+      screenRefs.shade = shade;
+
+      ease.add(shade, {alpha: 1}, {duration: 2000, wait: 500});
+      container.addChild(shade);
+
+      screenRefs.rects = [];
+      for(let y = 0; y < 5; y++) {
+        screenRefs.rects[y] = [];
+        for(let x = 0; x < 50; x++) {
+          let rect = new PIXI.Sprite(PIXI.Texture.WHITE);
+          rect.alpha = 0.5;
+          rect.tint = 0;
+          rect.anchor.set(0.5, 0.5);
+          rect.position.set(427 + 28 * x, 765 + 28 * y);
+
+          let scale = (53 - x * 1 - y * 1) / 5;
+          let scaleNorm = Math.min(Math.max(scale, 0), 1);
+
+          rect.width = rect.height = 0;
+
+          ease.add(rect, {
+            width: 28 * scaleNorm,
+            height: 28 * scaleNorm
+          }, {
+            duration: 800,
+            ease: "easeOutBack",
+            wait: (x * 0.7 + y * 3) * 15,
+          });
+
+          screenRefs.rects[y][x] = rect;
+
+          container.addChild(rect);
+        }
+      }
+
+      const segments = [{y: 785, h: 45}, {y: 823, h: 54}, {y: 751, h: 80}, {y: 864, h: 27}];
+
+      screenRefs.segmentSliders = [];
+      screenRefs.segmentBars = [];
+
+      let vertBar = new PIXI.Sprite(PIXI.Texture.WHITE);
+      vertBar.tint = 0xf9f9f9;
+      vertBar.position.set(413, 751);
+      vertBar.width = 18;
+      vertBar.height = 140;
+      vertBar.alpha = 0;
+      container.addChild(vertBar);
+
+      screenRefs.vertBar = vertBar;
+
+      ease.add(vertBar, {alpha: 1}, {duration: 100, wait: 800});
+
+      segments.forEach((seg, i) => {
+        let slider = new PIXI.Sprite(PIXI.Texture.WHITE);
+        slider.position.set(0, seg.y);
+        slider.height = seg.h;
+        slider.alpha = 0.3;
+        slider.tint = 0x294e8d;
+        container.addChild(slider);
+
+        let bar = new PIXI.Sprite(PIXI.Texture.WHITE);
+        bar.position.set(500, seg.y);
+        bar.width = 0;
+        bar.height = seg.h;
+        bar.tint = 0x294e8d;
+        container.addChild(bar);
+
+        ease.add(slider, {width: 500}, {duration: 300, wait: i * 124}).on("complete", () => {
+          ease.add(slider, {x: 500, width: 0}, {duration: 300});
+          ease.add(bar, {x: 103, width: 310}, {duration: 700, ease: "easeOutCubic"});
+        });
+
+        screenRefs.segmentSliders[i] = slider;
+        screenRefs.segmentBars[i] = bar;
+      });
+
+      let texxx = new PIXI.BitmapText(text, {
+        fontName: bold?("rajdhani-bold"):("rajdhani-norm")
+      });
+
+      texxx.maxWidth = 1400;
+      texxx.anchor.set(0, 0.5);
+      texxx.position.set(470, 817);
+      texxx.alpha = 0;
+
+      let targetScaleX = 1;
+
+      if(texxx.width > 1200) {
+        targetScaleX = 1200 / texxx.width;
+      }
+
+      texxx.scale.set(2 * targetScaleX, 2);
+
+      texxx.position.x += texxx.width / 4;
+      texxx.anchor.set(0.5, 0.5);
+
+      ease.add(texxx, {scaleX: targetScaleX, scaleY: 1},
+        {duration: 600, ease: "easeOutCubic", wait: 200});
+      ease.add(texxx, {alpha: 1}, {duration: 1200, wait: 300});
+
+      screenRefs.bmpText = texxx;
+
+      container.addChild(texxx);
+
+      screenRefs.clock = [];
+
+      let clockContainer = new PIXI.Container();
+      clockContainer.scale.set(2);
+      clockContainer.alpha = 0;
+
+      screenRefs.clockContainer = clockContainer;
+
+      for(let i = 0; i < 5; i++) {
+        let clock = new PIXI.BitmapText((i === 2)?":":"0", {
+          fontName: "rajdhani-clock"
+        });
+
+        clock.anchor.set(0.5, 0.5);
+        clock.roundPixels = true;
+        if(i < 2) {
+          clock.position.set(56 * i - 100, 0);
+        }
+        if(i > 2) {
+          clock.position.set(56 * (i - 4) + 100, 0);
+        }
+
+        screenRefs.clock[i] = clock;
+
+        clockContainer.addChild(clock);
+      }
+
+      clockContainer.position.set(260, 852);
+
+      ease.add(clockContainer, {scale: 1},
+        {duration: 400, ease: "easeOutCubic", wait: 900});
+      ease.add(clockContainer, {alpha: 1}, {duration: 1200, wait: 950});
+
+      container.addChild(clockContainer);
+
+      app.stage.addChild(container);
+    }
+
+    function removeFrameWoutClock() {
+      ease.add(screenRefs.bmpText, {scale: 0},
+        {duration: 400, ease: "easeInBack", wait: 600});
+
+        ease.add(screenRefs.bmpText, {alpha: 0}, {duration: 400, wait: 600});
+        ease.add(screenRefs.shade, {alpha: 0}, {duration: 1600}).on("complete", () => {
+          currentState = 0;
+        });
+
+        for(let i = 0; i < screenRefs.segmentSliders.length; i++) {
+          ease.add(screenRefs.segmentBars[i], {width: 0, x: 431}, {duration: 256, wait: i * 124 + 800});
+          ease.add(screenRefs.segmentSliders[i], {x: 0, width: 431}, {duration: 300, wait: i * 124 + 800}).on("complete", () => {
+            ease.add(screenRefs.segmentSliders[i], {width: 0}, {duration: 300});
+          });
+        }
+
+        for(let y = 0; y < 5; y++) {
+          for(let x = 0; x < 50; x++) {
+            ease.add(screenRefs.rects[y][x], {
+              width: 0,
+              height: 0
+            }, {
+              duration: 800,
+              ease: "easeInBack",
+              wait: ((50 - x) * 0.7 + (5 - y) * 3) * 15,
+            });
+          }
+        }
+    }
+
+    function removeFrameWithClock() {
+      ease.add(screenRefs.bmpText, {scale: 0},
+        {duration: 400, ease: "easeInBack", wait: 600});
+
+      ease.add(screenRefs.bmpText, {alpha: 0}, {duration: 400, wait: 600});
+
+      ease.add(screenRefs.clockContainer, {scale: 0},
+        {duration: 400, ease: "easeInBack", wait: 900});
+
+      ease.add(screenRefs.clockContainer, {alpha: 0}, {duration: 400, wait: 900});
+
+
+      ease.add(screenRefs.shade, {alpha: 0}, {duration: 1600}).on("complete", () => {
+        currentState = 0;
+      });
+
+      ease.add(screenRefs.vertBar, {alpha: 0}, {duration: 100, wait: 1200});
+
+      for(let i = 0; i < screenRefs.segmentSliders.length; i++) {
+        ease.add(screenRefs.segmentBars[i], {width: 0, x: 500}, {duration: 700, wait: i * 124 + 800});
+        ease.add(screenRefs.segmentSliders[i], {x: 0, width: 500}, {duration: 300, wait: i * 124 + 800}).on("complete", () => {
+          ease.add(screenRefs.segmentSliders[i], {width: 0}, {duration: 300});
+        });
+      }
+
+      for(let y = 0; y < 5; y++) {
+        for(let x = 0; x < 50; x++) {
+          ease.add(screenRefs.rects[y][x], {
+            width: 0,
+            height: 0
+          }, {
+            duration: 800,
+            ease: "easeInBack",
+            wait: ((50 - x) * 0.7 + (5 - y) * 3) * 15,
+          });
+        }
+      }
+    }
+
+    function swapText(newText, newBold) {
+      if(currentState > 0) {
+        ease.add(screenRefs.bmpText, {scale: 0},
+          {duration: 400, ease: "easeInBack", wait: 300});
+
+        ease.add(screenRefs.bmpText, {alpha: 0}, {duration: 400, wait: 300});
+
+        for(let y = 0; y < 5; y++) {
+          for(let x = 0; x < 50; x++) {
+            ease.add(screenRefs.rects[y][x], {
+              width: 0,
+              height: 0
+            }, {
+              duration: 300,
+              ease: "easeInBack",
+              wait: ((50 - x) * 0.7 + (5 - y) * 3) * 9,
+            });
+          }
+        }
+
+        ease.add(screenRefs.shade, {alpha: 0}, {duration: 800}).on("complete", () => {
+          // Add new text
+          let texxx = new PIXI.BitmapText(newText, {
+            fontName: newBold?("rajdhani-bold"):("rajdhani-norm")
+          });
+
+          texxx.maxWidth = 1400;
+          texxx.anchor.set(0, 0.5);
+          texxx.position.set(470, 817);
+          texxx.alpha = 0;
+
+          let targetScaleX = 1;
+
+          if(texxx.width > 1200) {
+            targetScaleX = 1200 / texxx.width;
+          }
+
+          texxx.scale.set(2 * targetScaleX, 2);
+
+          texxx.position.x += texxx.width / 4;
+          texxx.anchor.set(0.5, 0.5);
+
+          ease.add(texxx, {scaleX: targetScaleX, scaleY: 1},
+            {duration: 300, ease: "easeOutCubic", wait: 200});
+          ease.add(texxx, {alpha: 1}, {duration: 600, wait: 300});
+
+          screenRefs.bmpText = texxx;
+
+          screenRefs.container.addChild(screenRefs.bmpText);
+
+          screenRefs.bmpText.scale.set(0);
+
+          ease.add(screenRefs.shade, {alpha: 1}, {duration: 1000, wait: 200});
+
+          for(let y = 0; y < 5; y++) {
+            for(let x = 0; x < 50; x++) {
+              let scale = (53 - x * 1 - y * 1) / 5;
+              let scaleNorm = Math.min(Math.max(scale, 0), 1);
+
+              ease.add(screenRefs.rects[y][x], {
+                width: 28 * scaleNorm,
+                height: 28 * scaleNorm
+              }, {
+                duration: 300,
+                ease: "easeOutBack",
+                wait: (x * 0.7 + y * 3) * 9,
+              });
+            }
+          }
+        });
+      }
+    }
+
+    function memoryLeakClear() {
+      // Memory leak workaround
+      app.renderer.texture.boundTextures.forEach(bt => {
+        if(bt && bt._events && bt._events.update) {
+          bt._events.update = [];
+        }
+      });
+    }
+
+    function removeFrame() {
+      switch(currentState) {
+        case 1:
+        removeFrameWoutClock();
+        break;
+        case 2:
+        removeFrameWithClock();
+        break;
+      }
+    }
+
+    app.ticker.add((delta) => {
+      if(currentState == 2) {
+        // Timer update routine
+        memoryLeakClear();
+        let time = timerState.time;
+
+        if(timerState.running) {
+          let current = Date.now();
+          let realTime = (current - timerState.startedAt) / 1000;
+
+          time = Math.max(
+            timerState.time - realTime, 0);
+        }
+
+        // Set up info
+        let time2 = Math.floor(time);
+        let minutes = Math.floor(time2 / 60);
+        let seconds = Math.floor(time2 % 60);
+
+        let colon = Math.floor(time * 10) % 10 < 5 || !timerState.running;
+
+        let timeStrng = (((minutes<10)?("0"):("")) + minutes
+          + /*(colon?":":" ")*/":" + ((seconds<10)?("0"):("")) + seconds);
+
+        for(let i = 0; i < 5; i++) {
+          screenRefs.clock[i].text = timeStrng[i];
+        }
+      }
+    });
+  </script>
+</body>
+</html>

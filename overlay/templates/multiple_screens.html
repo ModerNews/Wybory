@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Wyniki głosowania</title>
+
+    <link rel="stylesheet" href="/static/css/rajdhani.css">
+
+    <script
+    src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+    crossorigin="anonymous"></script>
+
+    <script
+    src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+    integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+    crossorigin="anonymous"></script>
+
+    <script src="/static/js/pixi.min.js"></script>
+
+    <style>
+    body, html {
+      background: transparent;
+      margin: 0;
+      font-family: Rajdhani;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+    }
+
+    .count {
+      position: absolute;
+      display: block;
+      color: white;
+      bottom: 10px;
+      width: 95px;
+      text-align: center;
+      font-size: 40pt;
+      font-weight: 700;
+      text-shadow: 0 4px 4px rgba(0,0,0,0.5);
+      display: none;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="screen">
+      <!-- Background -->
+      <canvas id="canvas" width="1920" height="1080" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px"></canvas>
+
+      <!-- Foreground -->
+      <img src="/static/img/Frame_outside.png" style="position: absolute; top: 100px; left: 150px; width: 854px; height: 480px">
+      <img src="/static/img/Frame.png" style="position: absolute; top: 250px; left: 450px; width: 1280px; height: 720px">
+    </div>
+    <script>const app = new PIXI.Application({
+        width: 1920,
+        height: 1080,
+        backgroundColor: 0x3e4a69,
+        resolution: window.devicePixelRatio || 1,
+        view: $("#canvas")[0]
+      });
+
+      // add rectangles
+      let rects = [];
+      for(let x = 0; x < 48; x++) {
+        rects[x] = [];
+        for(let y = 0; y < 48; y++) {
+          let rect = new PIXI.Sprite(PIXI.Texture.WHITE);
+          rect.anchor.set(0.5);
+          rect.position.set(20 + x * 40, 20 + y * 40);
+          rect.width = 40;
+          rect.height = 40;
+          rect.scale.set(1);
+          rect.alpha = 0.1;
+          rect.tint = 0;
+          app.stage.addChild(rect);
+
+          rects[x][y] = rect;
+        }
+      }
+
+      let xPos = -900;
+
+
+      app.ticker.add((delta) => {
+        delta *= 1 / 60;
+        xPos += 500 * delta;
+
+        if(xPos > 4000) {
+          xPos = -900;
+        }
+
+        for(let x = 0; x < 48; x++) {
+          for(let y = 0; y < 48; y++) {
+            let rectPos = rects[x][y].position;
+            let size = -80 + Math.pow(Math.abs(rectPos.x + rectPos.y - xPos), 0.2) * 30;
+
+            size = Math.min(Math.max(size, 8), 36);
+
+            rects[x][y].width = size;
+            rects[x][y].height = size;
+          }
+        }
+      });
+    </script>
+    </body>
+</html>

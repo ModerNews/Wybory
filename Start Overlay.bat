@@ -6,7 +6,7 @@ call git pull https://github.com/ModerNews/Wybory --quiet
 pip list
 echo Everything setup, just continue to start the overlay
 pause
-call venv\Scripts\activate.bat
+call ..\venv\Scripts\activate.bat
 pause
 cd overlay\app
 pause

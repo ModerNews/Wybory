@@ -1,7 +1,9 @@
+import asyncio
 import datetime
 import json
 import hashlib
 import logging
+import os
 
 from logging.config import dictConfig
 from typing import Optional
@@ -15,60 +17,75 @@ from fastapi.templating import Jinja2Templates
 
 from Models import *
 
-app = FastAPI()
+
+class StreamOverlay(FastAPI):
+    def __init__(self):
+        self.timer = TimerState()
+        self.info_bar = []
+        self.emblem_visible = False
+        self.map_state = {"visible": False,
+                     "team1": "",
+                     "team2": ""}
+        self.overlay_mode = "GP"
+
+        with open("strings.txt") as file:
+            self.predefs = [item.strip() for item in file.read().split("\n")]
+
+        with open("candidates.txt") as file:
+            self.candidates = [item.strip() for item in file.read().split("\n")]
+
+        super().__init__()
+
+app = StreamOverlay()
 
 app.mount("/static", StaticFiles(directory="../static"), name="static")
-# templates = Jinja2Templates(directory="../templates")
-global timer
-global info_bar
-global emble_visible
-global map_state
-timer: TimerState = TimerState()
-info_bar = []
-emblem_visible = False
-map_state = {"visible": False,
-             "team1": "",
-             "team2": ""}
+templates = Jinja2Templates(directory="../templates")
 
 
-with open("strings.txt") as file:
-    predefs = [item.strip() for item in file.read().split("\n")]
-
-with open("candidates.txt") as file:
-    candidates = [item.strip() for item in file.read().split("\n")]
-
-
-def UpdateTimer():
-    if timer.running:
+def UpdateTimer(timer_object):
+    if timer_object.running:
         now = datetime.datetime.now()
-        timer_val = (now - timer.started_at).total_seconds()
+        timer_val = (now - timer_object.started_at).total_seconds()
 
-        timer.time = max(timer.time - timer_val, 0)
+        timer_object.time = max(timer_object.time - timer_val, 0)
 
-        timer.started_at = now
+        timer_object.started_at = now
+    return timer_object
+
+
+@app.on_event('startup')
+async def startup_action():
+    await asyncio.sleep(2)
+    os.system("explorer http://localhost:8080/start")
 
 
 @app.get("/")
 async def index_loader(request: Request, team1: str = "Nieznana", team2: str = "Nieznana"):
-    # return templates.TemplateResponse("index.html", {"request": request, "team1": team1.replace("_", " "), "team2": team2.replace("_", " ")})
-    with open('../templates/index.html', encoding='utf8') as file:
-        data = file.read()
-    return HTMLResponse(data)
+    return templates.TemplateResponse("index.html", {"request": request, "team1": team1.replace("_", " "), "team2": team2.replace("_", " ")})
+    # with open('../templates/index.html', encoding='utf8') as file:
+    #     data = file.read()
+    # return HTMLResponse(data)
+
+
+@app.get("/start")
+async def start_overlay(request: Request):
+    return templates.TemplateResponse("start_page.html", {"request": request})
+
 
 
 @app.get("/controller")
 async def main_controller(request: Request):
-    # return templates.TemplateResponse("controller.html", {"request": request})
-    with open('../templates/controller.html', encoding='utf8') as file:
-        data = file.read()
-    return HTMLResponse(data)
+    return templates.TemplateResponse("controller.html", {"request": request})
+    # with open('../templates/controller.html', encoding='utf8') as file:
+    #     data = file.read()
+    # return HTMLResponse(data)
 
 @app.get("/tournament")
 async def tournament_view(request: Request):
-    # return templates.TemplateResponse('tournament-table.html', {"request": request})
-    with open('../templates/tournament-table.html', encoding='utf8') as file:
-        data = file.read()
-    return HTMLResponse(data)
+    return templates.TemplateResponse('tournament-table.html', {"request": request})
+    # with open('../templates/tournament-table.html', encoding='utf8') as file:
+    #     data = file.read()
+    # return HTMLResponse(data)
 
 
 # region Websockets
@@ -105,33 +122,59 @@ manager = ConnectionManager()
 @app.websocket("/websocket")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    await websocket.send_json({"event": "infobar", "content": info_bar})
-    await websocket.send_json({"event": "show_emblem", "value": emblem_visible})
-    await websocket.send_json({"event": "predefs", "content": predefs})
-    await websocket.send_json({"event": "candidates", "content": candidates})
-    await websocket.send_json({"event": "timer_state", "state": timer.__dict__()})
-    await websocket.send_json({"event": "maps_state", "state": map_state})
+    await websocket.send_json({"event": "infobar", "content": app.info_bar})
+    await websocket.send_json({"event": "show_emblem", "value": app.emblem_visible})
+    await websocket.send_json({"event": "predefs", "content": app.predefs})
+    await websocket.send_json({"event": "candidates", "content": app.candidates})
+    await websocket.send_json({"event": "timer_state", "state": app.timer.__dict__()})
+    await websocket.send_json({"event": "maps_state", "state": app.map_state})
+    await websocket.send_json({"event": "setup_system", "mode": app.overlay_mode})
     await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_json()
-            print(data)
+            print(f"Received:\n{data}")
             if data["event"] == "timer":
-                if data["type"] == "start" and not timer.running:
-                    timer.running = True
-                    timer.started_at = datetime.datetime.now()
-                    await manager.send_json({"event": "timer_state", "state": timer.__dict__()})
+                if data["type"] == "start" and not app.timer.running:
+                    app.timer.running = True
+                    app.timer.started_at = datetime.datetime.now()
+                    data = {"event": "timer_state", "state": app.timer.__dict__()}
                 elif data["type"] == "stop":
-                    UpdateTimer()
-                    timer.running = False
-                    await manager.send_json({"event": "timer_state", "state": timer.__dict__()})
+                    app.timer = UpdateTimer(app.timer)
+                    app.timer.running = False
+                    data = {"event": "timer_state", "state": app.timer.__dict__()}
+                elif data["type"] == "set":
+                    app.timer.running = False
+                    app.timer.time = int(data["time"])
+                    data = {"event": "timer_state", "state": app.timer.__dict__()}
 
-                elif["type"] == "set":
-                    timer.running = False
-                    timer.time = int(data["time"])
-                    await manager.send_json({"event": "timer_state", "state": timer.__dict__()})
-            else:
-                await manager.send_json(data)
+            elif data['event'] == 'setup_system':
+                app.overlay_mode = data['mode']
+                os.system("explorer http://localhost:8080/controller")
+                data = {"event": "setup_system", "mode": app.overlay_mode}
+
+            elif data['event'] == "show_emblem":
+                app.emblem_visible = data['value']
+                data = {"event": "show_emblem", "value": app.emblem_visible}
+
+            elif data['event'] == "infobar":
+                app.info_bar = data['content']
+                data = {"event": "infobar", "content": app.info_bar}
+
+            elif data['event'] == "predefs":
+                app.predefs = data['content']
+                data = {"event": "predefs", "content": app.predefs}
+
+            elif data['event'] == 'candidates':
+                app.candidates = data['content']
+                data = {"event": "candidates", "content": app.candidates}
+
+            elif data['event'] == 'maps_state':
+                app.map_state = data['state']
+                data = {"event": "maps_state", "state": app.map_state}
+
+            print(f"Sent:\n{data}")
+            await manager.send_json(data)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 # endregion

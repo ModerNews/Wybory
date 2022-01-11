@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/static/css/slider-switch.css">
+  <script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+
+  <script
+  src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+  integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+  crossorigin="anonymous"></script>
+
+  <script src="/static/js/ease.js"></script>
+</head>
+<body>
+  <input class='overlay_type' type="radio" id="GP" name='overlay_type' checked>
+  <label for="GP">General Puropse</label><br/>
+  <input class='overlay_type' type="radio" id="Wybory" name='overlay_type'>
+  <label for="Wybory">Wybory</label><br/>
+  <input class='overlay_type'type="radio" id="Turniej" name='overlay_type'>
+  <label for="Turniej">Turniej</label><br/>
+
+  <div id="Teams" style="visibility: hidden;">
+    <input id="team1" type="text" placeholder="Nazwa pierwszej drużyny"><br/>
+    <input id="team2" type="text" placeholder="Nazwa Drugiej drużyny">
+  </div>
+  <div id="Candidates" style="visibility: hidden;">
+    <span>Lista kandydatów zostanie zaimportowana z pliku candidates.txt</span>
+  </div>
+
+  <button id="starter">Uruchom Nakładkę</button><br/>
+  <span id="return">Tu pojawi się twój link</span>
+
+  <script>
+    function createWebsocket() {
+      console.log("ws://" + location.hostname + ":" + location.port + "/websocket")
+      ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
+      ws.onopen = function (evt) {};
+      ws.onclose = function (evt) {};
+      ws.onmessage = function (evt) {};
+      ws.onerror = function (evt) {};
+    }
+
+    $("input.overlay_type").on("change", function (event) {
+      if (event.target.id === 'Turniej'){
+        $("div#Teams").css("visibility", 'visible')
+      } else {
+        $("div#Teams").css("visibility", 'hidden')
+      }
+      if (event.target.id === 'Wybory'){
+        $("div#Candidates").css("visibility", 'visible')
+      } else {
+        $("div#Candidates").css("visibility", 'hidden')
+      }
+    })
+
+    createWebsocket()
+
+    $("button#starter").click(function (event) {
+      ws.send(JSON.stringify({event: "setup_system", mode: $(':checked').attr("id")}))
+      if ($(':checked').attr("id") == "Turniej"){
+        $("span#return").html("Preklej ten link do obs'a: http://localhost:8080/?team1=" + $("#team1").val() + "&team2=" + $("#team2").val())
+      } else {
+        $("span#return").html("Preklej ten link do obs'a: http://localhost:8080/")
+      }
+    })
+  </script>
+</body>

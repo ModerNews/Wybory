@@ -59,266 +59,280 @@
       <input id="timer-value" type="text" value="00:40">
       <button id="timer-set">Ustaw i zatrzymaj</button>
     </div>
-    <div id="result-control-container">
-      <hr>
-      <h2>Wyniki wyborów</h2>
-      <!-- Script will add input fields here-->
+    <div style="position: relative;">
+      <div id="result-control-container" style="position: absolute; top: 0; left: 0; visibility: hidden">
+        <hr>
+        <h2>Wyniki wyborów</h2>
+        <!-- Script will add input fields here-->
+      </div>
+      <div id="tournament-result-control-container" style="position: absolute; top: 0; left: 0; visibility: hidden">
+        <hr>
+        <h2>Wyniki rund</h2>
+        <textarea id="team1" rows=4 type="text" placeholder="Mapy Drużyny Pierwszej"></textarea>
+        <textarea id="team2" rows=4 type="text" placeholder="Mapy Drużyny Drugiej"></textarea>
+        <button id="maps-update">Aktualizuj mapy</button>
+      </div>
     </div>
-    <div id="tournament-result-control-container">
-      <hr>
-      <h2>Wyniki rund</h2>
-      <textarea id="team1" rows=4 type="text" placeholder="Mapy Drużyny Pierwszej"></textarea>
-      <textarea id="team2" rows=4 type="text" placeholder="Mapy Drużyny Drugiej"></textarea>
-      <button id="maps-update">Aktualizuj mapy</button>
-    </div>
-    <script>
-      let ws;
-      let predefs = [];
-      let timerState = {
-        running: false,
-        time: 0,
-        startedAt: 0,
-      };
+  </body>
+  <script>
+    let ws;
+    let predefs = [];
+    let timerState = {
+      running: false,
+      time: 0,
+      startedAt: 0,
+    };
 
-      function createWebsocket() {
-        console.log("ws://" + location.hostname + ":" + location.port + "/websocket")
-        ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
-        ws.onopen = function(evt) { onOpen(evt) };
-        ws.onclose = function(evt) { onClose(evt) };
-        ws.onmessage = function(evt) { onMessage(evt) };
-        ws.onerror = function(evt) { onError(evt) };
+    function createWebsocket() {
+      console.log("ws://" + location.hostname + ":" + location.port + "/websocket")
+      ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/websocket");
+      ws.onopen = function(evt) { onOpen(evt) };
+      ws.onclose = function(evt) { onClose(evt) };
+      ws.onmessage = function(evt) { onMessage(evt) };
+      ws.onerror = function(evt) { onError(evt) };
 
-        function onOpen(evt)
-        {
+      function onOpen(evt)
+      {
 
-        }
+      }
 
-        function onClose(evt)
-        {
-          console.log("Trying to reconnect...");
-          setTimeout(createWebsocket, 1000);
-        }
+      function onClose(evt)
+      {
+        console.log("Trying to reconnect...");
+        setTimeout(createWebsocket, 1000);
+      }
 
-        function onMessage(evt)
-        {
-          let data = JSON.parse(evt.data);
-          console.log("Receiving websocket data")
-          console.log(data)
-          if(data.event === "infobar") {
-            $("#infobar-content").val(data.content.join("\r\n"));
-          }
-          if (data.event === "maps_state") {
-            $("#team1").val(data.state.team1)
-            $("#team2").val(data.state.team2)
-          }
-          if(data.event === "show_emblem") {
-            $("#emblem-visible").prop("checked", data.value);
-          }
-          if(data.event === "predefs") {
-            $("#textbar-content").empty();
-            predefs = data.content;
-            data.content.forEach((element, i) => {
-              let opt = $("<option></option>");
-              opt.text(element);
-              opt.attr("value", i);
-              $("#textbar-content").append(opt);
-            });
-          }
-          if(data.event === "timer_state") {
-            timerState = data.state;
-
-            if(timerState.running) {
-              timerState.startedAt = Date.now();
-            }
-          }
-          if(data.event === "candidates"){
-            let candidates = data.content;
-            let container = document.getElementById("result-control-container")
-            for(var i = 0; i < candidates.length; i++){
-              let field = document.createElement("p");
-              field.innerHTML = candidates[i] + " ";
-
-              let score_input = document.createElement("input");
-              score_input.type = "number";
-              score_input.id = "vote-count" + (i + 1);
-              field.appendChild(score_input);
-
-              let calculate_button = document.createElement("button");
-              calculate_button.className = "vote-show";
-              calculate_button.setAttribute("data-which", (i+1));
-              calculate_button.innerHTML = "Pokaż";
-              field.appendChild(calculate_button);
-              container.appendChild(field)
-            }
-            
-            function voteSum(vote_cats) {
-              let sum = 0;
-              for(let i = 1; i <= vote_cats; i++) {
-                let v = $("#vote-count" + i).val();
-                sum += parseInt(v);
-              }
-              sum += 12
-
-              return sum;
-            }
-
-            $(".vote-show").click((e) => {
-              console.log("dispatching");
-              let which = parseInt($(e.target).attr("data-which"));
-
-              ws.send(JSON.stringify({
-                event: "reveal_result",
-                which,
-                value: parseInt($("#vote-count" + which).val()),
-                total: voteSum(candidates.length),
-              }));
-            });
+      function onMessage(evt)
+      {
+        let data = JSON.parse(evt.data);
+        console.log("Receiving websocket data")
+        console.log(data)
+        if (data.event === "setup_system") {
+          if (data.mode === "GP") {
+            $("#result-control-container").css('visibility', 'hidden')
+            $("#tournament-result-control-container").css('visibility', 'hidden')
+          } else if (data.mode === "Turniej") {
+            $("#result-control-container").css('visibility', 'hidden')
+            $("#tournament-result-control-container").css('visibility', 'visible')
+          } else if (data.mode === "GP") {
+            $("#result-control-container").css('visibility', 'visible')
+            $("#tournament-result-control-container").css('visibility', 'hidden')
           }
         }
+        if(data.event === "infobar") {
+          $("#infobar-content").val(data.content.join("\r\n"));
+        }
+        if (data.event === "maps_state") {
+          $("#team1").val(data.state.team1)
+          $("#team2").val(data.state.team2)
+        }
+        if(data.event === "show_emblem") {
+          $("#emblem-visible").prop("checked", data.value);
+        }
+        if(data.event === "predefs") {
+          $("#textbar-content").empty();
+          predefs = data.content;
+          data.content.forEach((element, i) => {
+            let opt = $("<option></option>");
+            opt.text(element);
+            opt.attr("value", i);
+            $("#textbar-content").append(opt);
+          });
+        }
+        if(data.event === "timer_state") {
+          timerState = data.state;
 
-        function onError(evt)
-        {
-            console.error("socket error");
+          if(timerState.running) {
+            timerState.startedAt = Date.now();
+          }
+        }
+        if(data.event === "candidates"){
+          let candidates = data.content;
+          let container = document.getElementById("result-control-container")
+          for(var i = 0; i < candidates.length; i++){
+            let field = document.createElement("p");
+            field.innerHTML = candidates[i] + " ";
+
+            let score_input = document.createElement("input");
+            score_input.type = "number";
+            score_input.id = "vote-count" + (i + 1);
+            field.appendChild(score_input);
+
+            let calculate_button = document.createElement("button");
+            calculate_button.className = "vote-show";
+            calculate_button.setAttribute("data-which", (i+1));
+            calculate_button.innerHTML = "Pokaż";
+            field.appendChild(calculate_button);
+            container.appendChild(field)
+          }
+
+          function voteSum(vote_cats) {
+            let sum = 0;
+            for(let i = 1; i <= vote_cats; i++) {
+              let v = $("#vote-count" + i).val();
+              sum += parseInt(v);
+            }
+            sum += 12
+
+            return sum;
+          }
+
+          $(".vote-show").click((e) => {
+            console.log("dispatching");
+            let which = parseInt($(e.target).attr("data-which"));
+
+            ws.send(JSON.stringify({
+              event: "reveal_result",
+              which,
+              value: parseInt($("#vote-count" + which).val()),
+              total: voteSum(candidates.length),
+            }));
+          });
         }
       }
 
-      createWebsocket();
+      function onError(evt)
+      {
+        console.error("socket error");
+      }
+    }
 
-      $("#infobar-update").click(() => {
-        let currVal = $("#infobar-content").val();
-        let arr = currVal.split("\n");
-        let out = [];
+    createWebsocket();
 
-        arr.forEach(elm => {
-          let temp = elm.trim();
-          if(temp) {
-            out.push(temp);
-          }
-        });
+    $("#infobar-update").click(() => {
+      let currVal = $("#infobar-content").val();
+      let arr = currVal.split("\n");
+      let out = [];
 
-        ws.send(JSON.stringify({
-          event: "infobar",
-          content: out,
-        }));
+      arr.forEach(elm => {
+        let temp = elm.trim();
+        if(temp) {
+          out.push(temp);
+        }
       });
 
-      $("#maps-update").click(() => {
-        let team1 = $("#team1").val();
-        let team2 = $("#team2").val();
+      ws.send(JSON.stringify({
+        event: "infobar",
+        content: out,
+      }));
+    });
 
-        ws.send(JSON.stringify({
-          event: "maps_state",
-          state: {visible: true,
-                  team1: team1,
-                  team2: team2},
-        }));
-      });
+    $("#maps-update").click(() => {
+      let team1 = $("#team1").val();
+      let team2 = $("#team2").val();
 
-      $("#emblem-visible").change(() => {
-        ws.send(JSON.stringify({
-          event: "show_emblem",
-          value: $("#emblem-visible").is(":checked"),
-        }));
-      });
+      ws.send(JSON.stringify({
+        event: "maps_state",
+        state: {visible: true,
+          team1: team1,
+          team2: team2},
+      }));
+    });
 
-      $("#textbar-content").change(() => {
+    $("#emblem-visible").change(() => {
+      ws.send(JSON.stringify({
+        event: "show_emblem",
+        value: $("#emblem-visible").is(":checked"),
+      }));
+    });
+
+    $("#textbar-content").change(() => {
       let val = $("#textbar-content").val();
       $("#textbar-text").val(predefs[parseInt(val)]);
-      });
+    });
 
-      $("#textbar-show").click(() => {
-        ws.send(JSON.stringify({
-          event: "show_textbar",
-          type: $("#textbar-clock").is(":checked")?2:1,
-          bold: $("#textbar-bold").is(":checked"),
-          text: $("#textbar-text").val(),
-        }));
-      });
+    $("#textbar-show").click(() => {
+      ws.send(JSON.stringify({
+        event: "show_textbar",
+        type: $("#textbar-clock").is(":checked")?2:1,
+        bold: $("#textbar-bold").is(":checked"),
+        text: $("#textbar-text").val(),
+      }));
+    });
 
-      $("#textbar-update").click(() => {
-        ws.send(JSON.stringify({
-          event: "update_textbar",
-          bold: $("#textbar-bold").is(":checked"),
-          text: $("#textbar-text").val(),
-        }));
-      });
+    $("#textbar-update").click(() => {
+      ws.send(JSON.stringify({
+        event: "update_textbar",
+        bold: $("#textbar-bold").is(":checked"),
+        text: $("#textbar-text").val(),
+      }));
+    });
 
-      $("#textbar-hide").click(() => {
-        ws.send(JSON.stringify({
-          event: "hide_textbar"
-        }));
-      });
+    $("#textbar-hide").click(() => {
+      ws.send(JSON.stringify({
+        event: "hide_textbar"
+      }));
+    });
 
-      $("#timer-start").click(() => {
-        ws.send(JSON.stringify({
-          event: "timer",
-          type: "start"
-        }));
-      });
+    $("#timer-start").click(() => {
+      ws.send(JSON.stringify({
+        event: "timer",
+        type: "start"
+      }));
+    });
 
-      $("#timer-stop").click(() => {
-        ws.send(JSON.stringify({
-          event: "timer",
-          type: "stop"
-        }));
-      });
+    $("#timer-stop").click(() => {
+      ws.send(JSON.stringify({
+        event: "timer",
+        type: "stop"
+      }));
+    });
 
-      $("#timer-set").click(() => {
-        let timerValue = $("#timer-value").val();
-        let tim = timerValue.split(":");
+    $("#timer-set").click(() => {
+      let timerValue = $("#timer-value").val();
+      let tim = timerValue.split(":");
 
-        let seconds = parseInt(tim[0]) * 60 + parseInt(tim[1]);
+      let seconds = parseInt(tim[0]) * 60 + parseInt(tim[1]);
 
-        ws.send(JSON.stringify({
-          event: "timer",
-          type: "set",
-          time: seconds
-        }));
-      });
+      ws.send(JSON.stringify({
+        event: "timer",
+        type: "set",
+        time: seconds
+      }));
+    });
 
-      // function voteSum(vote_cats) {
-      //   let sum = 0;
-      //   for(let i = 1; i <= vote_cats; i++) {
-      //     let v = $("#vote-count" + i).val();
-      //     sum += parseInt(v);
-      //   }
+    // function voteSum(vote_cats) {
+    //   let sum = 0;
+    //   for(let i = 1; i <= vote_cats; i++) {
+    //     let v = $("#vote-count" + i).val();
+    //     sum += parseInt(v);
+    //   }
 
-      //   return sum;
-      // }
+    //   return sum;
+    // }
 
-      // $(".vote-show").click((e) => {
-      //   console.log("dispatching");
-      //   let which = parseInt($(e.target).attr("data-which"));
+    // $(".vote-show").click((e) => {
+    //   console.log("dispatching");
+    //   let which = parseInt($(e.target).attr("data-which"));
 
-      //   ws.send(JSON.stringify({
-      //     event: "reveal_result",
-      //     which,
-      //     value: parseInt($("#vote-count" + which).val()),
-      //     total: voteSum(),
-      //   }));
-      // });
+    //   ws.send(JSON.stringify({
+    //     event: "reveal_result",
+    //     which,
+    //     value: parseInt($("#vote-count" + which).val()),
+    //     total: voteSum(),
+    //   }));
+    // });
 
-      setInterval(() => { // Update timer
-        let time = timerState.time;
+    setInterval(() => { // Update timer
+      let time = timerState.time;
 
-        if(timerState.running) {
-          let current = Date.now();
-          let realTime = (current - timerState.startedAt) / 1000;
+      if(timerState.running) {
+        let current = Date.now();
+        let realTime = (current - timerState.startedAt) / 1000;
 
-          time = Math.max(
-            timerState.time - realTime, 0);
-        }
+        time = Math.max(
+                timerState.time - realTime, 0);
+      }
 
-        // Set up info
-        let time2 = Math.floor(time);
-        let minutes = Math.floor(time2 / 60);
-        let seconds = Math.floor(time2 % 60);
+      // Set up info
+      let time2 = Math.floor(time);
+      let minutes = Math.floor(time2 / 60);
+      let seconds = Math.floor(time2 % 60);
 
-        let timeStrng = (((minutes<10)?("0"):("")) + minutes
-          + ":" + ((seconds<10)?("0"):("")) + seconds);
+      let timeStrng = (((minutes<10)?("0"):("")) + minutes
+              + ":" + ((seconds<10)?("0"):("")) + seconds);
 
-        $("#timer-current").text(timeStrng);
-      }, 250);
-    </script>
-  </body>
+      $("#timer-current").text(timeStrng);
+    }, 250);
+  </script>
 </html>

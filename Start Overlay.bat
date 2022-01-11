@@ -7,5 +7,7 @@ pip list
 echo Everything setup, just continue to start the overlay
 pause
 call venv\Scripts\activate.bat
+pause
 cd overlay\app
+pause
 call cmd.exe /c uvicorn main:app --reload --host 127.0.0.1 --port 8080

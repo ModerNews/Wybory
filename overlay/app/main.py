@@ -28,6 +28,8 @@ class StreamOverlay(FastAPI):
                      "team2": ""}
         self.overlay_mode = "GP"
 
+        self.teams = ["Nieznany", "Nieznany"]
+
         with open("strings.txt") as file:
             self.predefs = [item.strip() for item in file.read().split("\n")]
 
@@ -60,8 +62,8 @@ async def startup_action():
 
 
 @app.get("/")
-async def index_loader(request: Request, team1: str = "Nieznana", team2: str = "Nieznana"):
-    return templates.TemplateResponse("index.html", {"request": request, "team1": team1.replace("_", " "), "team2": team2.replace("_", " ")})
+async def index_loader(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "team1": app.teams[0], "team2": app.teams[1]})
     # with open('../templates/index.html', encoding='utf8') as file:
     #     data = file.read()
     # return HTMLResponse(data)
@@ -172,6 +174,10 @@ async def websocket_endpoint(websocket: WebSocket):
             elif data['event'] == 'maps_state':
                 app.map_state = data['state']
                 data = {"event": "maps_state", "state": app.map_state}
+
+            elif data['event'] == 'teams':
+                app.teams[0] = data['team1']
+                app.teams[1] = data['team2']
 
             print(f"Sent:\n{data}")
             await manager.send_json(data)

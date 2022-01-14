@@ -62,10 +62,10 @@
     $("button#starter").click(function (event) {
       ws.send(JSON.stringify({event: "setup_system", mode: $(':checked').attr("id")}))
       if ($(':checked').attr("id") == "Turniej"){
-        $("span#return").html("Preklej ten link do obs'a: http://localhost:8080/?team1=" + $("#team1").val() + "&team2=" + $("#team2").val())
-      } else {
-        $("span#return").html("Preklej ten link do obs'a: http://localhost:8080/")
+        ws.send(JSON.stringify({event: "setup_teams", team1: $("#team1").val(), team2: $("#team2").val()}))
       }
+      window.location.replace("http://localhost:8080/")
+
     })
   </script>
 </body>

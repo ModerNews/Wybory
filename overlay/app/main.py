@@ -63,7 +63,7 @@ async def startup_action():
 
 @app.get("/")
 async def index_loader(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "team1": app.teams[0], "team2": app.teams[1]})
+    return templates.TemplateResponse("index.html", {"request": request, "team1": "4P1A", "team2": "Karasie"})
     # with open('../templates/index.html', encoding='utf8') as file:
     #     data = file.read()
     # return HTMLResponse(data)

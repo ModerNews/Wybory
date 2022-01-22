@@ -63,7 +63,8 @@ async def startup_action():
 
 @app.get("/")
 async def index_loader(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "team1": "4P1A", "team2": "Karasie"})
+    print(app.teams[0], app.teams[1])
+    return templates.TemplateResponse("index.html", {"request": request, "team1": app.teams[0], "team2": app.teams[1]})
     # with open('../templates/index.html', encoding='utf8') as file:
     #     data = file.read()
     # return HTMLResponse(data)
@@ -178,6 +179,7 @@ async def websocket_endpoint(websocket: WebSocket):
             elif data['event'] == 'teams':
                 app.teams[0] = data['team1']
                 app.teams[1] = data['team2']
+                print(app.teams)
 
             print(f"Sent:\n{data}")
             await manager.send_json(data)

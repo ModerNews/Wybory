@@ -110,8 +110,8 @@
         <div class="lobby" style="position: relative; top: 48px ;left: 50%; transform: translate(-50%, -50%); font-size: 30px; font-family:Rajdhani ">Loża Komentatorska</div>
         <div id="team1-container" style="position: absolute;top: 30px; width: 586px; transform: translate(0, -50%); font-size: 30px; font-family:Rajdhani "><span id="team1">{{ team1 }}</span></div>
         <div id="team2-container" style="position: absolute;top: 30px;left: 1334px; width: 586px; transform: translate(0, -50%); font-size: 30px; font-family:Rajdhani "><span id="team2">{{ team2 }}</span></div>
-        <div id="map1-container" style="visibility: hidden; position: absolute; top: 77px ;left: 0; height: 128px; width: 287px; vertical-align: center; font-size: 30px; font-family:Rajdhani "><span id="map1">Overpass<br/>16:9</span></div>
-        <div id="map2-container" style="visibility: hidden; position: absolute;: absolute; top: 77px ;right: 0; height: 128px; width: 287px; vertical-align: center;  font-size: 30px; font-family:Rajdhani "><span id="map2">Mirrage<br/>4:2</span></div>
+        <div id="map1-container" style="visibility: hidden; position: absolute; top: 77px ;left: 0; height: 128px; width: 287px; vertical-align: center; font-size: 30px; font-family:Rajdhani "><span id="map1"></span></div>
+        <div id="map2-container" style="visibility: hidden; position: absolute;: absolute; top: 77px ;right: 0; height: 128px; width: 287px; vertical-align: center;  font-size: 30px; font-family:Rajdhani "><span id="map2"></span></div>
       </div>
     </div>
   <script>
@@ -236,8 +236,11 @@
         }
       }
 
+      let mapState;
       if (data.event === "maps_state") {
         mapState = data.state;
+        console.log(data.team1)
+        console.log(data.team2)
 
         if(!mapState.visible) {
           $('#map1-container').css('visibility', 'hidden');
@@ -248,8 +251,8 @@
           $('#map1-container').css('visibility', 'visible');
           $("#map2-container").css('visibility', 'visible');
           $("#imgmaps").css('visibility', 'visible');
-          $('#map1').text(data.team1)
-          $('map2').text(data.team2)
+          $('#map1-container').find('span').first().html(mapState.team1)
+          $('#map2-container').find('span').first().html(mapState.team2)
         }
       }
     }

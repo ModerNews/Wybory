@@ -62,8 +62,9 @@
     $("button#starter").click(function (event) {
       ws.send(JSON.stringify({event: "setup_system", mode: $(':checked').attr("id")}))
       if ($(':checked').attr("id") == "Turniej"){
-        ws.send(JSON.stringify({event: "setup_teams", team1: $("#team1").val(), team2: $("#team2").val()}))
+        ws.send(JSON.stringify({event: "teams", team1: $("#team1").val(), team2: $("#team2").val()}))
       }
+
       window.location.replace("http://localhost:8080/")
 
     })

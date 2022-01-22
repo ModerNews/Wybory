@@ -90,6 +90,9 @@ async def tournament_view(request: Request):
     #     data = file.read()
     # return HTMLResponse(data)
 
+@app.get("/ladder")
+async def tournament_view(request: Request):
+    return templates.TemplateResponse('tournament-ladder.html', {"request": request})
 
 # region Websockets
 class ConnectionManager:
